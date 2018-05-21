@@ -8,6 +8,7 @@ docker run --privileged --runtime=nvidia -it --rm \
   --env="QT_X11_NO_MITSHM=1" \
   --volume /tmp/.X11-unix:/tmp/.X11-unix:ro \
   --volume $PWD:/code --name=face_rec \
+  -p 8888:8888 \
   narenm/opencv:gpu bash
 
 xhost -local:docker
