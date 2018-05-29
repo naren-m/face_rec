@@ -1,6 +1,6 @@
 import cv2
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+# import matplotlib.pyplot as plt
+# import matplotlib.patches as patches
 import numpy as np
 import os.path
 
@@ -14,10 +14,10 @@ from keras.utils import CustomObjectScope
 import tensorflow as tf
 
 from urllib.request import urlopen
-
+import shutil
 from model import create_model
-
-EMBEDDING_FIME_NAME = "embeddings.npy"
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 def save_embeddings(filename, embedded):
     np.save(filename, embedded)
@@ -67,6 +67,9 @@ def load_image(path):
     img = cv2.imread(path, 1)
     # OpenCV loads images with color channels
     # in BGR order. So we need to reverse them
+    if img is None:
+        return None
+    
     return img[...,::-1]
 
 # Transform image using specified face landmark indices and crop image to 96x96
@@ -82,21 +85,43 @@ def get_largest_bounding_box(img):
 def create_embeddings(metadata):
     embedded = np.zeros((metadata.shape[0], 128))
     nn4_small2_pretrained = get_model()
+
     for i, m in enumerate(metadata):
-        
         img = load_image(m.image_path())
         if img is None:
             continue
         img = align_image(img)
-        
+        invalid_faces_path = "data/faces_invalid"
+
         try:
             # scale RGB values to interval [0,1]
             img = (img / 255.).astype(np.float32)
             embedded[i] = nn4_small2_pretrained.predict(np.expand_dims(img, axis=0))[0]
         except Exception as e:
-            print(m.file)
+            shutil.move(m.image_path(),  os.path.join(invalid_faces_path, m.file))
             continue
     return embedded
+
+def img_path_to_encoding(img_path):
+    img = load_image(img_path)
+
+    if img is None:
+        return None
+    
+    model = get_model()
+    img = align_image(img)
+    
+    try:
+        img = (img / 255.).astype(np.float32)
+        encoding = model.predict(np.expand_dims(img, axis=0))[0]
+    except Exception as e:
+        print(img_path, e)
+        return None
+    
+    return encoding
+
+
+
 
 def distance(emb1, emb2):
     return np.sum(np.square(emb1 - emb2))
@@ -108,6 +133,37 @@ def show_pair(embedded, idx1, idx2):
     plt.imshow(load_image(metadata[idx1].image_path()))
     plt.subplot(122)
     plt.imshow(load_image(metadata[idx2].image_path()));   
+
+
+def show_face_bound_and_alignment(img_path):
+
+    # Load an image
+    face_orig = load_image(img_path)
+
+    # Detect face and return bounding box
+    bb = get_largest_bounding_box(face_orig)
+
+    face_aligned = align_image(face_orig)
+
+    # Show original image
+    plt.subplot(131)
+    plt.imshow(face_orig)
+
+    # Show original image with bounding box
+    plt.subplot(132)
+    plt.imshow(face_orig)
+    plt.gca().add_patch(patches.Rectangle((bb.left(), bb.top()), bb.width(), bb.height(), fill=False, color='red'))
+
+    # Show aligned image
+    plt.subplot(133)
+    plt.imshow(face_aligned)
+
+def show_image(img_path):
+        # Load an image
+    face_orig = load_image(img_path)
+
+    # Show original image
+    plt.imshow(face_orig)
 
 dst_dir = 'models'
 dst_file = os.path.join(dst_dir, 'landmarks.dat')
