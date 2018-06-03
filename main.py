@@ -3,7 +3,10 @@ import dlib
 import os
 import cv2
 
+import numpy as np
+
 import align
+import model
 
 # from model import create_model
 
@@ -20,12 +23,12 @@ openfaceModelDir = os.path.join(modelDir, 'openface')
 kerasOpenfaceModelDir = os.path.join(modelDir, 'keras_openface')
 
 predictor = "shape_predictor_68_face_landmarks.dat"
-model_name = os.path.join(kerasOpenfaceModelDir, "nn4.small2.v1.h5")
 
 # Load pretrained keras openface model that generates face embeddings
 def load_model():
-    nn4_small2_pretrained = create_model()
-    nn4_small2_pretrained.load_weights(model_name)
+    model_full_pth = os.path.join(kerasOpenfaceModelDir, "nn4.small2.v1.h5")
+    nn4_small2_pretrained = model.create_model()
+    nn4_small2_pretrained.load_weights(model_full_pth)
 
     return nn4_small2_pretrained
 
@@ -60,9 +63,13 @@ def align_image(img):
     return alignment.align(96, img, alignment.getLargestFaceBoundingBox(img),
                           landmarkIndices=align.AlignDlib.OUTER_EYES_AND_NOSE)
 
-# Get face landmarks
-# Generate face embeddings
+# Get face landmarks ?
+# Generate face embeddings/encodings
+
 # Get bounding boxes
+def detect_faces(image):
+    bbs = detector(image, 1)
+    return bbs
 
 # Load image filepaths to memory
 # Train the keral model with new faces
@@ -82,7 +89,11 @@ def playground():
     image_path = 'images_full/Naren/IMG_0101.jpg'
 
     rgb_image = read_image_for_dlib(image_path)
+    bounding_box = detect_faces(rgb_image)
     aligned_image = align_image(rgb_image)
-    show_image(aligned_image, "aligned image")
+    # show_image(aligned_image, "aligned image")
+    model = load_model()
+    encoding = model.predict(np.array([aligned_image]))
+    print(encoding)
 
 playground()
