@@ -6,6 +6,6 @@ __pycache__
 images*
 thirdparty
 aligned-images
-generated-embeddings
+generated-embeddings_bak
 training-images
 tags
