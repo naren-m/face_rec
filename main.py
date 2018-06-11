@@ -6,6 +6,8 @@ import logging
 import csv
 import numpy as np
 
+from sklearn.datasets import load_files
+
 import align
 import model
 
@@ -134,7 +136,7 @@ def generate_encodings_for_images(base_folder, file_name="encodings.csv"):
     logging.info("Took {} seconds to load all image paths".format(time.time() - start))
 
     with open(file_name, 'w') as f:
-        wr = csv.writer(f, delimiter = ',')
+        wr = csv.writer(f, delimiter = ':')
 
         for d in data:
             d.image = read_image_for_dlib(d.image_path())
@@ -144,13 +146,47 @@ def generate_encodings_for_images(base_folder, file_name="encodings.csv"):
                 d.encoding = img_to_encoding(d.aligned_face)
             except:
                 logging.warning("something wrong with image {}".format(d.image_path()))
+                continue
             logging.info("Took {} seconds generate embeding for {}".format(time.time() - start, d.image_path()))
-
             wr.writerow([d.image_path(), d.name, d.encoding])
 
     return data
 
+def generate_and_save_encodings(base_folder, output_dir = ""):
+    data = load_files(base_folder, load_content=False, shuffle=False)
+    labels_array = data['target']
+    paths = data['filenames']
+
+    embedding_size=128
+
+    nrof_images = len(paths)
+    emb_array = np.zeros((nrof_images, embedding_size))
+    print(nrof_images, len(labels_array))
+    for i, p in enumerate(paths):
+        print(i, p)
+        img = read_image_for_dlib(paths[i])
+        start = time.time()
+        try:
+            encoding = img_to_encoding(align_image(img))
+        except Exception as e:
+            logging.warning("something wrong with image {}".format(paths[i]))
+            encoding = None
+            logging.warning("Exception {}".format(e))
+
+        logging.info("Took {} seconds generate embeding for {}".format(time.time() - start, paths[i]))
+
+        emb_array[i] = encoding
+
+    print("Finally saving embeddings and gallery to: %s" % (output_dir))
+     # save the gallery and embeddings (signatures) as numpy arrays to disk
+    np.save(os.path.join(output_dir, "lables.npy"), labels_array)
+    np.save(os.path.join(output_dir, "encodings.npy"), emb_array)
+
+
+
 def save_embedings_to_file():
-    data = generate_encodings_for_images("training-images")
+    # data = generate_encodings_for_images("training-images")
+    generate_and_save_encodings("training-images", "generated-embeddings")
+    # data = generate_encodings_for_images("images", "full_encodings.csv")
 
 save_embedings_to_file()
