@@ -11,17 +11,18 @@ from sklearn.datasets import load_files
 import align
 import model
 
-logging.basicConfig(filename="facenet_training.log", level = logging.INFO)
+logging.basicConfig(filename="facenet_training.log", level=logging.INFO)
 
 detector = dlib.get_frontal_face_detector()
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
-modelDir = os.path.join(fileDir,  'models')
+modelDir = os.path.join(fileDir, 'models')
 dlibModelDir = os.path.join(modelDir, 'dlib')
 openfaceModelDir = os.path.join(modelDir, 'openface')
 kerasOpenfaceModelDir = os.path.join(modelDir, 'keras_openface')
 
 predictor = "shape_predictor_68_face_landmarks.dat"
+
 
 # Load pretrained keras openface model that generates face embeddings
 def load_model():
@@ -30,6 +31,7 @@ def load_model():
     nn4_small2_pretrained.load_weights(model_full_pth)
 
     return nn4_small2_pretrained
+
 
 # Show image in Opencv window
 def show_image(window_name, image):
@@ -44,12 +46,13 @@ def read_image(path):
 
     return image
 
+
 # Read image in Dlib format from filepath
 def read_image_for_dlib(path):
     image = cv2.imread(path, 1)
 
     # Converts the image from BGR (Opencv format) to RGB (Dlib fromat)
-    return cv2.flip(image,1)
+    return cv2.flip(image, 1)
 
 
 # Align the face. Input format of the face is Dlib(rgb)
@@ -59,8 +62,12 @@ def read_image_for_dlib(path):
 def align_image(img):
     alignment = align.AlignDlib(os.path.join(dlibModelDir, predictor))
 
-    return alignment.align(96, img, alignment.getLargestFaceBoundingBox(img),
-                          landmarkIndices=align.AlignDlib.OUTER_EYES_AND_NOSE)
+    return alignment.align(
+        96,
+        img,
+        alignment.getLargestFaceBoundingBox(img),
+        landmarkIndices=align.AlignDlib.OUTER_EYES_AND_NOSE)
+
 
 # Generate face embeddings/encodings
 # TODO: Crate a similar api for batch predictions
@@ -69,6 +76,7 @@ def img_to_encoding(aligned_image):
     encoding = model.predict(np.array([aligned_image]))
 
     return encoding[0]
+
 
 # Get bounding boxes
 def detect_faces(image):
@@ -94,12 +102,13 @@ class Metadata(object):
     def image_path(self):
         return os.path.join(self.base, self.name, self.file)
 
+
 # Get all image filepaths.
 def load_image_paths(path):
     data = list()
     for folder in os.listdir(path):
         for f in os.listdir(os.path.join(path, folder)):
-                data.append(Metadata(path, folder, f))
+            data.append(Metadata(path, folder, f))
     return data
 
 
@@ -115,6 +124,7 @@ def load_image_paths(path):
 # Class for Embedding
 # Class for Recognition
 
+
 # Playground
 def playground():
     image_path = 'training-images/Naren/face_12036.jpg'
@@ -126,17 +136,19 @@ def playground():
     encoding = img_to_encoding(aligned_image)
     print(encoding)
 
+
 # Load image filepaths to memory and calculate encodings
 def generate_encodings_for_images(base_folder, file_name="encodings.csv"):
-    logging.info("Loading files from {}".format(base_folder) )
+    logging.info("Loading files from {}".format(base_folder))
     start = time.time()
 
     data = load_image_paths(base_folder)
 
-    logging.info("Took {} seconds to load all image paths".format(time.time() - start))
+    logging.info(
+        "Took {} seconds to load all image paths".format(time.time() - start))
 
     with open(file_name, 'w') as f:
-        wr = csv.writer(f, delimiter = ':')
+        wr = csv.writer(f, delimiter=':')
 
         for d in data:
             d.image = read_image_for_dlib(d.image_path())
@@ -145,19 +157,22 @@ def generate_encodings_for_images(base_folder, file_name="encodings.csv"):
             try:
                 d.encoding = img_to_encoding(d.aligned_face)
             except:
-                logging.warning("something wrong with image {}".format(d.image_path()))
+                logging.warning("something wrong with image {}".format(
+                    d.image_path()))
                 continue
-            logging.info("Took {} seconds generate embeding for {}".format(time.time() - start, d.image_path()))
+            logging.info("Took {} seconds generate embeding for {}".format(
+                time.time() - start, d.image_path()))
             wr.writerow([d.image_path(), d.name, d.encoding])
 
     return data
 
-def generate_and_save_encodings(base_folder, output_dir = ""):
+
+def generate_and_save_encodings(base_folder, output_dir=""):
     data = load_files(base_folder, load_content=False, shuffle=False)
     labels_array = data['target']
     paths = data['filenames']
 
-    embedding_size=128
+    embedding_size = 128
 
     nrof_images = len(paths)
     emb_array = np.zeros((nrof_images, embedding_size))
@@ -173,20 +188,21 @@ def generate_and_save_encodings(base_folder, output_dir = ""):
             encoding = None
             logging.warning("Exception {}".format(e))
 
-        logging.info("Took {} seconds generate embeding for {}".format(time.time() - start, paths[i]))
+        logging.info("Took {} seconds generate embeding for {}".format(
+            time.time() - start, paths[i]))
 
         emb_array[i] = encoding
 
     print("Finally saving embeddings and gallery to: %s" % (output_dir))
-     # save the gallery and embeddings (signatures) as numpy arrays to disk
+    # save the gallery and embeddings (signatures) as numpy arrays to disk
     np.save(os.path.join(output_dir, "lables.npy"), labels_array)
     np.save(os.path.join(output_dir, "encodings.npy"), emb_array)
-
 
 
 def save_embedings_to_file():
     # data = generate_encodings_for_images("training-images")
     generate_and_save_encodings("training-images", "generated-embeddings")
     # data = generate_encodings_for_images("images", "full_encodings.csv")
+
 
 save_embedings_to_file()
