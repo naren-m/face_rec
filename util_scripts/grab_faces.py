@@ -28,6 +28,7 @@ image_extensions.append(".png")
 image_extensions.append(".JPG")
 image_extensions.append(".PNG")
 
+
 def main():
     logging.debug("Started processing")
 
@@ -50,6 +51,7 @@ def main():
                 shutil.move(imagePath, processed_dir)
             except Exception as e:
                 logging.error("Unable to move file:{}".format(str(e)))
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,3 @@
-
 class Face:
     def __init__(self, baseImage, face_location, identity="UNKNOWN"):
         self.base = baseImage
@@ -13,9 +12,11 @@ class Face:
 
     def save(self, path=''):
         _imageBaseName, _imageExt = os.path.splitext(self.base.imagePath)
-        fileName = _imageBaseName.split('/')[-1] + "_face_" + str(time.time()) + _imageExt.lower()
-        name = os.path.join( path, fileName)
+        fileName = _imageBaseName.split('/')[-1] + "_face_" + str(
+            time.time()) + _imageExt.lower()
+        name = os.path.join(path, fileName)
         cv2.imwrite(name, self.image)
+
 
 class Image:
     def __init__(self, path):
@@ -39,7 +40,8 @@ class Image:
         cv2.resize(self.image, dim, interpolation=cv2.INTER_AREA)
 
     def valid(self):
-        if self.image is None or len(self.image.shape) < 3 or len(self.image) == 0:
+        if self.image is None or len(self.image.shape) < 3 or len(
+                self.image) == 0:
             return False
 
         return True
@@ -60,9 +62,9 @@ class Image:
     def drawBoundingBoxes(self):
         for face_location in self._faceLocations:
             top, right, bottom, left = face_location
-            cv2.rectangle(self.image, (left, top), (right, bottom), (0, 0, 255), 9)
+            cv2.rectangle(self.image, (left, top), (right, bottom),
+                          (0, 0, 255), 9)
 
     def saveFaces(self, path='data/faces'):
         for face in self.faces:
             face.save(path)
-
