@@ -52,6 +52,5 @@ def main():
             except Exception as e:
                 logging.error("Unable to move file:{}".format(str(e)))
 
-
 if __name__ == "__main__":
     main()
