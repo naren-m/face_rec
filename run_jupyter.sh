@@ -14,5 +14,6 @@
 # limitations under the License.
 # ==============================================================================
 
+source /Users/$USER/.virtualenvs/dl/bin/activate
 
 jupyter notebook --allow-root "$@" 
